@@ -1,7 +1,6 @@
 <div class="form-container">
   <h2>Sign up</h2>
   <form (submit)="onSubmit($event)" novalidate>
-  <!-- <form [formRoot]="form"> -->
     <div class="field">
       <label for="username">Username</label>
       <input
@@ -32,6 +31,25 @@
       }
     </div>
 
+    <!-- 1. -->
+    <div class="field">
+      @let age = form.age();
+      @let showAgeError = age.invalid() && age.touched();
+      <label for="age">Age</label>
+      <input
+        id="age"
+        type="number"
+        [formField]="form.age"
+      />
+      @if (showAgeError) {
+        <ul class="error-list">
+          @for (error of age.errors(); track error.kind) {
+            <li>{{ error.message }}</li>
+          }
+        </ul>
+      }
+    </div>
+
     <div class="actions">
       <button type="submit" [disabled]="form().invalid() || form().submitting()"> 
         @if (form().submitting()) {
@@ -42,4 +60,6 @@
       </button>
     </div>
   </form>
+
+  <pre>{{ model() | json }}</pre>
 </div>
