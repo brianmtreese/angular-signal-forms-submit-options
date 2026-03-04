@@ -1,30 +1,21 @@
-import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
-import { CommonModule, JsonPipe } from '@angular/common';
-import { FormField, form, minLength, required } from '@angular/forms/signals';
+import { ChangeDetectionStrategy, Component, resource, signal } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { FormField, FormRoot, debounce, form, minLength, required, validateAsync } from '@angular/forms/signals';
 
 interface SignupModel {
 	username: string;
-	email: string;
-	// age: number; // ------------------ 1. / 6.
-	// age: number | string; // ------------------ 4.
-	age: number | null; // ------------------ 5.
 }
 
 @Component({
   selector: 'app-form',
-  imports: [CommonModule, FormField, JsonPipe],
+  imports: [CommonModule, FormField, FormRoot],
   templateUrl: './form.component.html',
   styleUrl: './form.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class FormComponent {
 	protected readonly model = signal<SignupModel>({
-		username: '',
-		email: '',
-		// age: 0, // ------------------ 3.
-		// age: '', // ------------------ 5.
-		// age: NaN, // ------------------ 7.
-		age: null, // ------------------ 8.
+		username: ''
 	});
 
 	protected readonly form = form(
@@ -33,14 +24,60 @@ export class FormComponent {
 			required(s.username, { message: 'Please enter a username' });
 			minLength(s.username, 3, 
 				{ message: 'Your username must be at least 3 characters' });
-			required(s.email, { message: 'Please enter an email address' });
-
-			required(s.age, { message: 'Please enter an age' }); // ------------------ 2.
+			validateAsync(s.username, {
+				params: ({ value }) => {
+					const val = value();
+					if (!val || val.length < 3) {
+						return undefined;
+					}
+					return val;
+				},
+				factory: params =>
+					resource({
+						params,
+						loader: async ({ params }) => {
+							const username = params;
+							const available = await this.checkUsernameAvailability(username);
+							return available;
+						}
+					}),
+				onSuccess: (result: boolean) => {
+					if (result === false) {
+						return {
+							kind: 'username_taken',
+							message: 'This username is already taken'
+						}
+					}
+					return null;
+				},
+				onError: (error: unknown) => {
+					console.error('Validation error:', error);
+					return null;
+				}
+			});
+			debounce(s.username, 300);
+		},
+		{
+			submission: {
+				ignoreValidators: 'all',
+				action: async form => {
+					console.log('Form Value:', form().value());
+					await new Promise(resolve => setTimeout(resolve, 1500));
+				},
+				onInvalid: (field, detail) => {
+					const first = detail.root().errorSummary()?.[0];
+					first?.fieldTree()?.focusBoundControl?.();
+				}
+			}
 		}
 	);
 
-	protected onSubmit(event: Event) {
-		event.preventDefault();
-		console.log('Form Value:', this.form().value());
+	private checkUsernameAvailability(username: string): Promise<boolean> {
+		return new Promise(resolve => {
+			setTimeout(() => {
+				const taken = ['admin', 'test', 'brian'];
+				resolve(!taken.includes(username.toLowerCase()));
+			}, 5000);
+		});
 	}
 }

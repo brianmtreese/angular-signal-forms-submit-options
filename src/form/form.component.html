@@ -1,12 +1,15 @@
 <div class="form-container">
   <h2>Sign up</h2>
-  <form (submit)="onSubmit($event)" novalidate>
+  <form [formRoot]="form">
     <div class="field">
       <label for="username">Username</label>
       <input
         id="username"
         type="text"
         [formField]="form.username" />
+      @if (form.username().pending()) {
+        <p class="info">Checking availability...</p>
+      }
       @if (form.username().touched() && form.username().invalid()) {
         <ul class="error-list">
           @for (err of form.username().errors(); track $index) {
@@ -15,43 +18,8 @@
         </ul>
       }
     </div>
-
-    <div class="field">
-      <label for="email">Email</label>
-      <input
-        id="email"
-        type="email"
-        [formField]="form.email" />
-      @if (form.email().touched() && form.email().invalid()) {
-        <ul class="error-list">
-          @for (err of form.email().errors(); track $index) {
-            <li>{{ err.message }}</li>
-          }
-        </ul>
-      }
-    </div>
-
-    <!-- 1. -->
-    <div class="field">
-      @let age = form.age();
-      @let showAgeError = age.invalid() && age.touched();
-      <label for="age">Age</label>
-      <input
-        id="age"
-        type="number"
-        [formField]="form.age"
-      />
-      @if (showAgeError) {
-        <ul class="error-list">
-          @for (error of age.errors(); track error.kind) {
-            <li>{{ error.message }}</li>
-          }
-        </ul>
-      }
-    </div>
-
     <div class="actions">
-      <button type="submit" [disabled]="form().invalid() || form().submitting()"> 
+      <button type="submit" [disabled]="form().submitting()"> 
         @if (form().submitting()) {
           Creating… 
         } @else { 
@@ -60,6 +28,4 @@
       </button>
     </div>
   </form>
-
-  <pre>{{ model() | json }}</pre>
 </div>
