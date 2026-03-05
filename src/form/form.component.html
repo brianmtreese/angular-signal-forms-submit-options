@@ -20,11 +20,7 @@
     </div>
     <div class="actions">
       <button type="submit" [disabled]="form().submitting()"> 
-        @if (form().submitting()) {
-          Creating… 
-        } @else { 
-          Create account
-        }
+        {{ form().submitting() ? 'Creating…' : 'Create account' }}
       </button>
     </div>
   </form>
